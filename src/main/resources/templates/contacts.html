@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>联系人管理</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+    <!DOCTYPE html>
+    <html xmlns:th="http://www.thymeleaf.org">
+    <body>
+
+    <div th:replace="~{fragments/sidebar :: sidebar('contacts')}"></div>
+
+    </body>
+    </html>
+
+
+    <main class="main">
+        <div class="page-title">联系人管理</div>
+        <div class="page-subtitle">标记老师、辅导员、班委等，标记后重点关注</div>
+
+        <div class="card">
+            <div class="card-title">添加标记人</div>
+            <form id="addContactForm" style="display:flex;gap:10px;">
+                <input type="text" name="qq" placeholder="QQ号" required style="flex:1;">
+                <input type="text" name="name" placeholder="姓名" style="flex:1;">
+                <input type="text" name="role" placeholder="角色(老师/辅导员)" style="flex:1;">
+                <input type="text" name="groupId" placeholder="群号(留空=所有群)" style="flex:1;">
+                <button type="submit" class="btn btn-primary">添加</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <table>
+                <thead><tr><th>QQ</th><th>姓名</th><th>角色</th><th>群号</th><th>标记</th><th>操作</th></tr></thead>
+                <tbody>
+                <tr th:each="c : ${contacts}">
+                    <td th:text="${c.qq}">QQ</td>
+                    <td th:text="${c.name}">姓名</td>
+                    <td th:text="${c.role}">角色</td>
+                    <td th:text="${c.groupId != null ? c.groupId : '所有群'}">群</td>
+                    <td><span class="badge" th:classappend="${c.isMarked} ? 'badge-green' : 'badge-gray'" th:text="${c.isMarked} ? '已标记' : '未标记'"></span></td>
+                    <td>
+                        <div class="action-group">
+                            <button class="btn btn-ghost btn-sm" th:onclick="'toggle(' + ${c.id} + ')'">切换</button>
+                            <button class="btn btn-danger btn-sm" th:onclick="'del(' + ${c.id} + ')'">删除</button>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.getElementById('addContactForm').addEventListener('submit', function(e){
+        e.preventDefault();
+        fetch('/api/contact', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({qq: this.qq.value, name: this.name.value, role: this.role.value, groupId: this.groupId.value})
+        }).then(r=>r.json()).then(()=>location.reload());
+    });
+    function toggle(id){ fetch('/api/contact/'+id+'/toggle',{method:'POST'}).then(r=>r.json()).then(()=>location.reload()); }
+    function del(id){ if(confirm('确定删除？')){ fetch('/api/contact/'+id,{method:'DELETE'}).then(r=>r.json()).then(()=>location.reload()); } }
+</script>
+</body>
+</html>

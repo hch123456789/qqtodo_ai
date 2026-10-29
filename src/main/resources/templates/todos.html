@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>待办事项</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+    <!-- 侧边栏 -->
+    <div th:replace="~{fragments/sidebar :: sidebar('todos')}"></div>
+
+    <!-- 主内容 -->
+    <main class="main">
+        <div class="page-title">待办事项</div>
+        <div class="page-subtitle">AI 自动抽取，人工确认后生效</div>
+
+        <div class="card" th:if="${#lists.isEmpty(todos)}">
+            <div class="empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <div>暂无待办事项</div>
+            </div>
+        </div>
+
+        <div class="card" th:unless="${#lists.isEmpty(todos)}">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>任务</th><th>截止时间</th><th>地点</th><th>来源</th><th>优先级</th><th>状态</th><th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="todo : ${todos}">
+                        <td th:text="${todo.task}" style="font-weight:500;max-width:260px;word-break:break-word;"></td>
+                        <td th:text="${todo.time != null ? #temporals.format(todo.time, 'MM-dd HH:mm') : '-'}">-</td>
+                        <td th:text="${todo.location}">-</td>
+                        <td th:text="${todo.source}" style="color:var(--text-dim);">-</td>
+                        <td>
+                            <span class="badge" th:classappend="${todo.priority == '高'} ? 'badge-high' : (${todo.priority == '中'} ? 'badge-mid' : 'badge-low')"
+                                  th:text="${todo.priority}">-</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-green" th:if="${todo.confirmed}">已确认</span>
+                            <span class="badge badge-gray" th:if="${!todo.confirmed}">未确认</span>
+                        </td>
+                        <td>
+                            <div class="action-group">
+                                <button class="btn btn-success btn-sm" th:onclick="'confirmTodo(' + ${todo.id} + ')'">确认</button>
+                                <button class="btn btn-danger btn-sm" th:onclick="'openReject(' + ${todo.id} + ')'">拒绝</button>
+                                <button class="btn btn-warning btn-sm" th:onclick="'openCorrect(' + ${todo.id} + ')'">修正</button>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 拒绝弹窗 -->
+<div class="modal-overlay" id="rejectModal">
+    <div class="modal">
+        <div class="modal-title">拒绝这条待办</div>
+        <div class="form-group">
+            <label>不相关程度（0~100，越高越不相关）</label>
+            <input type="number" id="rejectScore" min="0" max="100" value="80">
+        </div>
+        <div class="form-group">
+            <label>备注（可选，告诉 AI 为什么无关）</label>
+            <textarea id="rejectNote" placeholder="例如：这是别的班的通知"></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal('rejectModal')">取消</button>
+            <button class="btn btn-danger" onclick="submitReject()">确认拒绝</button>
+        </div>
+    </div>
+</div>
+
+<!-- 修正弹窗 -->
+<div class="modal-overlay" id="correctModal">
+    <div class="modal">
+        <div class="modal-title">修正这条待办</div>
+        <div class="form-group">
+            <label>修正后的任务内容</label>
+            <textarea id="correctTask" placeholder="输入正确的任务描述"></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal('correctModal')">取消</button>
+            <button class="btn btn-warning" onclick="submitCorrect()">保存修正</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentId = null;
+
+    function confirmTodo(id) {
+        fetch('/api/todo/' + id + '/confirm', {method: 'POST'})
+            .then(r => r.json()).then(() => location.reload());
+    }
+    function openReject(id) { currentId = id; document.getElementById('rejectModal').classList.add('show'); }
+    function openCorrect(id) {
+        currentId = id;
+        document.getElementById('correctTask').value = '';
+        document.getElementById('correctModal').classList.add('show');
+    }
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+    function submitReject() {
+        const score = document.getElementById('rejectScore').value;
+        const note = document.getElementById('rejectNote').value;
+        fetch('/api/todo/' + currentId + '/reject', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({relevanceScore: parseInt(score), note: note})
+        }).then(r => r.json()).then(() => location.reload());
+    }
+    function submitCorrect() {
+        const task = document.getElementById('correctTask').value;
+        fetch('/api/todo/' + currentId + '/correct', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({task: task})
+        }).then(r => r.json()).then(() => location.reload());
+    }
+</script>
+</body>
+</html>

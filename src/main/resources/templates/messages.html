@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>消息记录</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+    <div th:replace="~{fragments/sidebar :: sidebar('messages')}"></div>
+
+    <main class="main">
+        <div class="page-title">最近消息</div>
+        <div class="page-subtitle">已过滤后的消息记录</div>
+
+        <div class="card">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr><th>群号</th><th>发送者</th><th>内容</th><th>时间</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="m : ${messages}">
+                        <td th:text="${m.groupId}" style="color:var(--text-dim);">群</td>
+                        <td th:text="${m.senderQq}" style="color:var(--text-dim);">发送者</td>
+                        <td th:text="${m.content}" style="max-width:480px;word-break:break-word;"></td>
+                        <td th:text="${m.msgTime != null ? #temporals.format(m.msgTime, 'MM-dd HH:mm') : '-'}" style="color:var(--text-dim);">时间</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

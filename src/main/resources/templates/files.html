@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>文件资料</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+    <div th:replace="~{fragments/sidebar :: sidebar('files')}"></div>
+
+    <main class="main">
+        <div class="page-title">文件资料</div>
+        <div class="page-subtitle">老师发的文件，AI 自动解析总结</div>
+
+        <div class="card" th:if="${#lists.isEmpty(files)}">
+            <div class="empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <div>暂无文件资料</div>
+            </div>
+        </div>
+
+        <div class="card" th:each="f : ${files}">
+            <div class="card-title" th:text="${f.fileName}">文件名</div>
+            <div class="card-meta">
+                <span th:text="${f.fileType}">类型</span>
+                <span th:if="${f.createdAt != null}"> · </span>
+                <span th:if="${f.createdAt != null}" th:text="${#temporals.format(f.createdAt, 'MM-dd HH:mm')}"></span>
+            </div>
+
+            <!-- markdown 渲染的摘要 -->
+            <div class="summary-content" th:attr="data-md=${f.summary}"></div>
+
+            <!-- 操作按钮 -->
+            <div class="action-group" style="margin-top:14px;">
+                <a class="btn btn-ghost btn-sm" th:href="@{/api/file/{id}/download(id=${f.id})}" target="_blank">打开原文件</a>
+                <button class="btn btn-warning btn-sm" th:onclick="'feedbackFile(' + ${f.id} + ')'">反馈</button>
+                <button class="btn btn-danger btn-sm" th:onclick="'deleteFile(' + ${f.id} + ')'">删除</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    // 渲染 markdown 摘要
+    document.querySelectorAll('.summary-content').forEach(function(el) {
+        const md = el.getAttribute('data-md') || '';
+        if (md) {
+            el.innerHTML = marked.parse(md);
+        }
+    });
+
+    // 删除文件
+    function deleteFile(id) {
+        if (!confirm('确定删除该文件？')) return;
+        fetch('/api/file/' + id, {method: 'DELETE'})
+            .then(r => r.json()).then(() => location.reload());
+    }
+
+    // 反馈
+    function feedbackFile(id) {
+        let note = prompt('反馈内容（例如：摘要不准，漏了截止日期）：', '');
+        if (note === null) return;
+        fetch('/api/file/' + id + '/feedback', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({note: note})
+        }).then(r => r.json()).then(res => alert(res.message || '已提交反馈'));
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>我的画像</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+    <div th:replace="~{fragments/sidebar :: sidebar('profile')}"></div>
+
+
+    <main class="main">
+        <div class="page-title">我的画像</div>
+        <div class="page-subtitle">AI 会根据这里的内容判断消息是否与你相关</div>
+
+        <form id="profileForm">
+            <div class="card">
+                <div class="card-title">基础身份</div>
+                <div class="card-meta">告诉 AI 你是谁（姓名、班级、职务等）</div>
+                <textarea name="identity" rows="5" th:text="${identity}" placeholder="例如：姓名、学校、班级、学号、职务、辅导员..."></textarea>
+            </div>
+
+            <div class="card">
+                <div class="card-title">偏好规则</div>
+                <div class="card-meta">告诉 AI 你关心什么、不关心什么</div>
+                <textarea name="rules" rows="5" th:text="${rules}" placeholder="例如：只关心本班事务，不关心文体活动报名..."></textarea>
+            </div>
+
+
+            <div style="display:flex;gap:10px;">
+                <button type="submit" class="btn btn-primary">保存画像</button>
+                <button type="button" class="btn btn-ghost" onclick="refineRules()">让 AI 提炼规则</button>
+            </div>
+        </form>
+    </main>
+</div>
+
+<script>
+    // ===== 保存画像逻辑 =====
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const identity = this.identity.value;
+        const rules = this.rules.value;
+        fetch('/api/profile', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({identity: identity, rules: rules})
+        }).then(r => r.json()).then(res => {
+            alert(res.message || '保存成功');
+            location.reload();
+        });
+    });
+
+    function refineRules() {
+        fetch('/api/profile/refine', {method: 'POST'})
+            .then(r => r.json())
+            .then(res => {
+                alert('提炼完成！\n' + (res.rules || ''));
+                location.reload();
+            });
+    }
+</script>
+</body>
+</html>

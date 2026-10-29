@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>群管理</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+    <div th:replace="~{fragments/sidebar :: sidebar('groups')}"></div>
+
+    <main class="main">
+        <div class="page-title">群管理</div>
+        <div class="page-subtitle">添加你要关注的班级群</div>
+
+        <div class="card">
+            <div class="card-title">添加群</div>
+            <form id="addGroupForm" style="display:flex;gap:10px;">
+                <input type="text" name="groupId" placeholder="群号" required style="flex:1;">
+                <input type="text" name="groupName" placeholder="群名" style="flex:1;">
+                <button type="submit" class="btn btn-primary">添加</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <table>
+                <thead><tr><th>群号</th><th>群名</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody>
+                <tr th:each="g : ${groups}">
+                    <td th:text="${g.groupId}">群号</td>
+                    <td th:text="${g.groupName}">群名</td>
+                    <td><span class="badge" th:classappend="${g.enabled} ? 'badge-green' : 'badge-gray'" th:text="${g.enabled} ? '启用' : '停用'"></span></td>
+                    <td>
+                        <div class="action-group">
+                            <button class="btn btn-ghost btn-sm" th:onclick="'toggle(' + ${g.id} + ')'">切换</button>
+                            <button class="btn btn-danger btn-sm" th:onclick="'del(' + ${g.id} + ')'">删除</button>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.getElementById('addGroupForm').addEventListener('submit', function(e){
+        e.preventDefault();
+        fetch('/api/group', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({groupId: this.groupId.value, groupName: this.groupName.value})
+        }).then(r=>r.json()).then(()=>location.reload());
+    });
+    function toggle(id){ fetch('/api/group/'+id+'/toggle',{method:'POST'}).then(r=>r.json()).then(()=>location.reload()); }
+    function del(id){ if(confirm('确定删除？')){ fetch('/api/group/'+id,{method:'DELETE'}).then(r=>r.json()).then(()=>location.reload()); } }
+</script>
+</body>
+</html>
